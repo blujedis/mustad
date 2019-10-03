@@ -1,0 +1,9 @@
+# Dependency directories
+node_modules/
+
+# production server output
+dist/debug*
+
+# custom
+.tmp
+temp.js

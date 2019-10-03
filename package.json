@@ -1,0 +1,30 @@
+{
+  "name": "mustad",
+  "version": "0.1.0",
+  "description": "Pre and post hooks for functions such as node, mongodb etc.",
+  "scripts": {
+    "build": "rimraf dist && tsc -b",
+    "start": "tsc -w",
+    "test": "mocha test/**/*.spec.ts* --require ./register.js --bail"
+  },
+  "keywords": [
+    "hooks",
+    "kareem",
+    "promise-hooks",
+    "node hooks",
+    "before-after-hooks",
+    "mustad"
+  ],
+  "license": "ISC",
+  "devDependencies": {
+    "@types/chai": "^4.2.3",
+    "@types/mocha": "^5.2.7",
+    "@types/node": "^12.7.8",
+    "chai": "^4.2.0",
+    "mocha": "^6.2.1",
+    "rimraf": "^3.0.0",
+    "ts-node": "^8.4.1",
+    "tslint": "^5.20.0",
+    "typescript": "^3.6.3"
+  }
+}
