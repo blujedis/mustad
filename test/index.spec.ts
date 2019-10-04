@@ -21,7 +21,6 @@ api.pre(['getName', 'getNameProm'], (next, name) => {
 });
 
 api.post(['getName', 'getNameProm'], (next, result) => {
-  // assert.equal('My name is Milton Waddams', result);
   next();
 });
 
@@ -73,7 +72,7 @@ describe('Mustad', () => {
     api.getName('Milton Waddams', (err, result) => {
       assert.equal('My name is Peter Gibbons', result);
       done();
-    })
+    });
 
   });
 

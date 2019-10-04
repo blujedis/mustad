@@ -7,7 +7,17 @@ exports.isFunction = val => typeof val === 'function';
 exports.isUndefined = val => typeof val === 'undefined';
 exports.hasOwn = (obj, key) => obj.hasOwnProperty(key);
 exports.toArray = val => exports.isUndefined(val) && [] || (Array.isArray(val) && val) || [val];
+exports.isArray = val => Array.isArray(val);
 exports.isHooked = (handler) => handler.__hooked === true;
+/**
+ * Flattens multi dimensional array.
+ *
+ * @param arr the array to be flattened.
+ */
+function flatten(arr) {
+    return arr.reduce((a, c) => [...a, ...(Array.isArray(c) ? flatten(c) : [c])], []);
+}
+exports.flatten = flatten;
 function isHookable(key, proto, exclude) {
     if (Array.isArray(proto))
         return !proto.includes(key);
@@ -23,7 +33,7 @@ exports.isHookable = isHookable;
  * @param fn the function to be wrapped.
  * @param scope the scope to apply to the function.
  */
-function once(fn, scope) {
+function once(fn, scope = {}) {
     function wrapper() {
         if (wrapper.__called)
             return;

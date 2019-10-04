@@ -6,7 +6,14 @@ export declare const isFunction: (val: any) => boolean;
 export declare const isUndefined: (val: any) => boolean;
 export declare const hasOwn: (obj: object, key: string) => boolean;
 export declare const toArray: (val: any) => any[];
+export declare const isArray: (val: any) => boolean;
 export declare const isHooked: (handler: Handler) => boolean;
+/**
+ * Flattens multi dimensional array.
+ *
+ * @param arr the array to be flattened.
+ */
+export declare function flatten<T = any>(arr: T[]): T[];
 /**
  * Checks if method exists, is function and isn't already "__hooked".
  *

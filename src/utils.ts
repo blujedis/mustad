@@ -7,6 +7,7 @@ export const isFunction = val => typeof val === 'function';
 export const isUndefined = val => typeof val === 'undefined';
 export const hasOwn = (obj: object, key: string) => obj.hasOwnProperty(key);
 export const toArray = val => isUndefined(val) && [] || (Array.isArray(val) && val) || [val];
+export const isArray = val => Array.isArray(val);
 export const isHooked = (handler: Handler) => (handler as any).__hooked === true;
 
 /**
@@ -51,7 +52,7 @@ export function isHookable<T extends object>(key: string, proto: T | Handler | s
  * @param fn the function to be wrapped.
  * @param scope the scope to apply to the function.
  */
-export function once<T>(fn: any, scope?: T) {
+export function once<T>(fn: any, scope: T = {} as any) {
   function wrapper() {
     if (wrapper.__called)
       return;

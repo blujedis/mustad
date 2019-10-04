@@ -5,7 +5,6 @@ export declare class Mustad<T = any> {
     proto: T | Mustad;
     pres: MustadMap;
     posts: MustadMap;
-    groups: Map<string, string[]>;
     options: IOptions;
     constructor(options?: IOptions);
     /**
@@ -30,7 +29,7 @@ export declare class Mustad<T = any> {
      * @param meta metadata for ensuring hooks have completed or timedout.
      * @param done function called on done.
      */
-    protected applyHooks<C = any>(args: any[], handlers: NextHandler[], meta: IMeta<C>, done: (err: Error, data?: any[]) => void): Promise<void | NodeJS.Immediate>;
+    protected applyHooks(args: any[], handlers: NextHandler[], meta: IMeta, done: (err: Error, data?: any[]) => void): Promise<void | NodeJS.Immediate>;
     /**
      * Wraps a hook function.
      *
@@ -38,7 +37,7 @@ export declare class Mustad<T = any> {
      * @param args the arguments to apply
      * @param handlers the handlers to pass to function.
      */
-    protected wrapHook<C = any>(fn: (...args: any[]) => void, args: any[], handlers: NextHandler[], meta: IMeta<C>): Promise<any[]>;
+    protected wrapHook(fn: (...args: any[]) => void, args: any[], handlers: NextHandler[], meta: IMeta): Promise<any[]>;
     /**
      * Wraps a method handler function.
      *
@@ -54,7 +53,7 @@ export declare class Mustad<T = any> {
      * @param handler the handler to be compiled.
      * @param context the context to be applied.
      */
-    compile<C extends object>(name: string, handler: Handler, context?: C): ((...args: any[]) => any) & {
+    compile(name: string, handler: Handler): ((...args: any[]) => any) & {
         __hooked?: boolean;
     };
     /**
@@ -63,26 +62,74 @@ export declare class Mustad<T = any> {
      * @param name the name of the method to apply hook to.
      * @param handler the handler to be wrapped.
      */
-    hook<C extends object>(name: string, handler: Handler, context?: C): this;
+    hook(name: string, handler: Handler): this;
     /**
      * Adds pre hooks to method.
      *
      * @param name the name of the method to bind to.
-     * @param funcs the method or methods to wrap with hooks.
+     * @param handlers the method or methods to wrap with hooks.
      */
-    pre(name: string, ...funcs: NextHandler[]): any;
+    pre(name: string, handlers: NextHandler[]): this;
+    /**
+     * Adds pre hooks to method.
+     *
+     * @param names the names of the methods to bind to.
+     * @param handlers the method or methods to wrap with hooks.
+     */
+    pre(names: string[], handlers: NextHandler[]): this;
+    /**
+     * Adds pre hooks to method.
+     *
+     * @param name the name of the method to bind to.
+     * @param handlers the method or methods to wrap with hooks.
+     */
+    pre(name: string, ...handlers: NextHandler[]): this;
+    /**
+     * Adds pre hooks to method.
+     *
+     * @param names the names of the methods to bind to.
+     * @param handlers the method or methods to wrap with hooks.
+     */
+    pre(names: string[], ...handlers: NextHandler[]): this;
     /**
      * Adds post hooks to method.
      *
      * @param name the name of the method to bind to.
-     * @param funcs the method or methods to wrap with hooks.
+     * @param handlers the method or methods to wrap with hooks.
      */
-    post(name: string, ...funcs: NextHandler[]): any;
+    post(name: string, handlers: NextHandler[]): this;
+    /**
+     * Adds post hooks to method.
+     *
+     * @param names the names of the methods to bind to.
+     * @param handlers the method or methods to wrap with hooks.
+     */
+    post(names: string[], handlers: NextHandler[]): this;
+    /**
+     * Adds post hooks to method.
+     *
+     * @param name the name of the method to bind to.
+     * @param handlers the method or methods to wrap with hooks.
+     */
+    post(name: string, ...handlers: NextHandler[]): this;
+    /**
+     * Adds post hooks to method.
+     *
+     * @param names the names of the methods to bind to.
+     * @param handlers the method or methods to wrap with hooks.
+     */
+    post(names: string[], ...handlers: NextHandler[]): this;
     preExec(name: string, handler: Handler, args: any[], ...funcs: NextHandler[]): any;
     preExec(name: string, args: any[], ...funcs: NextHandler[]): any;
     preExec(name: string, args: any[]): any;
     postExec(name: string, handler: Handler, args: any[], ...funcs: NextHandler[]): any;
     postExec(name: string, args: any[], ...funcs: NextHandler[]): any;
     postExec(name: string, args: any[]): any;
+    /**
+     * Returns a list of hooked methods.
+     */
+    list(): string[];
 }
-export declare function wrap<T>(proto: T, instance?: Mustad<T>): T & Pick<Mustad<T>, "pre" | "post" | "preExec" | "postExec">;
+export declare function wrap<T>(proto: T, instance?: Mustad<T>): T & Pick<Mustad<T>, "pre" | "post" | "preExec" | "postExec"> & {
+    mustad: Mustad<T>;
+};

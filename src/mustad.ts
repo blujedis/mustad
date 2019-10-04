@@ -1,6 +1,7 @@
 import { MustadMap } from './map';
 import { IOptions, NextHandler, Handler, IMeta } from './types';
-import { isHooked, me, isFunction, toArray, isHookable, isError, once, isBoolean, isPromise, flatten } from './utils';
+import { isHooked, me, isFunction, toArray, isHookable, isError, once, isBoolean, isPromise, 
+  flatten, isArray, isUndefined } from './utils';
 
 const DEFAULTS: IOptions = {
   appendArgs: false,
@@ -18,7 +19,6 @@ export class Mustad<T = any> {
   proto: T | Mustad;
   pres = new MustadMap();
   posts = new MustadMap();
-  groups = new Map<string, string[]>();
   options: IOptions;
 
   constructor(options: IOptions = {}) {
@@ -60,8 +60,8 @@ export class Mustad<T = any> {
    * @param meta metadata for ensuring hooks have completed or timedout.
    * @param done function called on done.
    */
-  protected async applyHooks<C = any>(
-    args: any[], handlers: NextHandler[], meta: IMeta<C>, done: (err: Error, data?: any[]) => void) {
+  protected async applyHooks(
+    args: any[], handlers: NextHandler[], meta: IMeta, done: (err: Error, data?: any[]) => void) {
 
     const mustad = meta.mustad;
     const options = mustad.options;
@@ -120,7 +120,7 @@ export class Mustad<T = any> {
 
     // Get the result allow user to call next()
     // return true/false, a Promise or an Error.
-    wrapper = once(next, meta.context);
+    wrapper = once(next);
     const result = fn(wrapper, ...args);
 
     // Result was returned, callback NOT called.
@@ -131,7 +131,6 @@ export class Mustad<T = any> {
       // User returned a promise call
       // and convert to callback.
       if (isPromise(result)) {
-        next(true);
         const { err, data } = await me(result);
         next(err, data);
       }
@@ -160,13 +159,13 @@ export class Mustad<T = any> {
    * @param args the arguments to apply
    * @param handlers the handlers to pass to function.
    */
-  protected wrapHook<C = any>(
-    fn: (...args: any[]) => void, args: any[], handlers: NextHandler[], meta: IMeta<C>) {
+  protected wrapHook(
+    fn: (...args: any[]) => void, args: any[], handlers: NextHandler[], meta: IMeta) {
 
     // ensure array.
     args = toArray(args);
 
-    meta = { ...{ length: handlers.length, completed: 0, timedout: false, context: {} as any }, ...meta };
+    meta = { ...{ length: handlers.length, completed: 0, timedout: false }, ...meta };
 
     return new Promise<any[]>((res, rej) => {
 
@@ -252,7 +251,7 @@ export class Mustad<T = any> {
    * @param handler the handler to be compiled.
    * @param context the context to be applied.
    */
-  compile<C extends object>(name: string, handler: Handler, context: C = {} as any) {
+  compile(name: string, handler: Handler) {
 
     if (isHooked(handler))
       return null;
@@ -277,7 +276,7 @@ export class Mustad<T = any> {
       if (this.options.enablePre && pres.length) {
 
         const { err: preErr, data: preData } =
-          await me(this.wrapHook(this.applyHooks.bind(this), nextArgs, pres, { context, mustad, name }));
+          await me(this.wrapHook(this.applyHooks.bind(this), nextArgs, pres, { mustad, name }));
 
         if (preErr)
           return this.handleError(preErr, cb);
@@ -296,7 +295,7 @@ export class Mustad<T = any> {
       if (this.options.enablePost && posts.length) {
 
         const { err: postErr, data: postData } =
-          await me(this.wrapHook(this.applyHooks.bind(this), nextArgs, posts, { context, mustad, name }));
+          await me(this.wrapHook(this.applyHooks.bind(this), nextArgs, posts, { mustad, name }));
 
         if (postErr)
           return this.handleError(postErr, cb);
@@ -331,10 +330,10 @@ export class Mustad<T = any> {
    * @param name the name of the method to apply hook to.
    * @param handler the handler to be wrapped.
    */
-  hook<C extends object>(name: string, handler: Handler, context: C = {} as any) {
+  hook(name: string, handler: Handler) {
 
     const proto = this.proto || this as any;
-    const compiled = this.compile(name, handler, context);
+    const compiled = this.compile(name, handler);
 
     if (!compiled)
       return this;
@@ -469,7 +468,30 @@ export class Mustad<T = any> {
   preExec(name: string, args: any[]);
   preExec(name: string, handler: Handler | any[], args?: any[] | NextHandler, ...funcs: NextHandler[]) {
 
+    if (isArray(handler)) {
+      if (!isUndefined(args))
+        funcs.unshift(args as any);
+      args = handler;
+      handler = undefined;
+    }
+
+    if (isFunction(args)) {
+      funcs.unshift(args as any);
+      args = undefined;
+    }
+
+    args = args || [];
+
+    handler = handler || this.proto[name];
+
+    if (!handler)
+      throw new Error(`preExec cannot execute undefined handler for ${name}`);
+
+    const compiled = this.compile(name, handler);
+    
+
     return;
+
   }
 
   postExec(name: string, handler: Handler, args: any[], ...funcs: NextHandler[]);
@@ -477,7 +499,22 @@ export class Mustad<T = any> {
   postExec(name: string, args: any[]);
   postExec(name: string, handler: Handler | any[], args?: any[] | NextHandler, ...funcs: NextHandler[]) {
 
+    if (isArray(handler)) {
+      if (!isUndefined(args))
+        funcs.unshift(args as any);
+      args = handler;
+      handler = undefined;
+    }
+
+    if (isFunction(args)) {
+      funcs.unshift(args as any);
+      args = undefined;
+    }
+
+    args = args || [];
+
     return;
+
   }
 
   /**

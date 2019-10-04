@@ -16,7 +16,6 @@ class Mustad {
     constructor(options = {}) {
         this.pres = new map_1.MustadMap();
         this.posts = new map_1.MustadMap();
-        this.groups = new Map();
         options = { ...DEFAULTS, ...options };
         this.options = options;
     }
@@ -96,7 +95,7 @@ class Mustad {
         };
         // Get the result allow user to call next()
         // return true/false, a Promise or an Error.
-        wrapper = utils_1.once(next, meta.context);
+        wrapper = utils_1.once(next);
         const result = fn(wrapper, ...args);
         // Result was returned, callback NOT called.
         // ensure value is not function where user
@@ -129,7 +128,7 @@ class Mustad {
     wrapHook(fn, args, handlers, meta) {
         // ensure array.
         args = utils_1.toArray(args);
-        meta = { ...{ length: handlers.length, completed: 0, timedout: false, context: {} }, ...meta };
+        meta = { ...{ length: handlers.length, completed: 0, timedout: false }, ...meta };
         return new Promise((res, rej) => {
             fn(args, handlers, meta, (err, nargs) => {
                 if (err)
@@ -185,7 +184,7 @@ class Mustad {
      * @param handler the handler to be compiled.
      * @param context the context to be applied.
      */
-    compile(name, handler, context = {}) {
+    compile(name, handler) {
         if (utils_1.isHooked(handler))
             return null;
         if (!utils_1.isHookable(name, handler, this.options.exclude))
@@ -200,7 +199,7 @@ class Mustad {
             const cb = utils_1.isFunction(args[args.length - 1]) ? args.pop() : null;
             let nextArgs = args.slice(0);
             if (this.options.enablePre && pres.length) {
-                const { err: preErr, data: preData } = await utils_1.me(this.wrapHook(this.applyHooks.bind(this), nextArgs, pres, { context, mustad, name }));
+                const { err: preErr, data: preData } = await utils_1.me(this.wrapHook(this.applyHooks.bind(this), nextArgs, pres, { mustad, name }));
                 if (preErr)
                     return this.handleError(preErr, cb);
                 nextArgs = preData;
@@ -210,10 +209,12 @@ class Mustad {
             if (hErr)
                 return this.handleError(hErr, cb);
             if (this.options.enablePost && posts.length) {
-                const { err: postErr, data: postData } = await utils_1.me(this.wrapHook(this.applyHooks.bind(this), nextArgs, posts, { context, mustad, name }));
+                const { err: postErr, data: postData } = await utils_1.me(this.wrapHook(this.applyHooks.bind(this), nextArgs, posts, { mustad, name }));
                 if (postErr)
                     return this.handleError(postErr, cb);
                 nextArgs = postData.length === 1 ? postData[0] : postData;
+                if (cb)
+                    cb(null, ...utils_1.toArray(nextArgs));
                 return Promise.resolve(nextArgs);
             }
             else {
@@ -230,24 +231,25 @@ class Mustad {
      * @param name the name of the method to apply hook to.
      * @param handler the handler to be wrapped.
      */
-    hook(name, handler, context = {}) {
+    hook(name, handler) {
         const proto = this.proto || this;
-        const compiled = this.compile(name, handler, context);
+        const compiled = this.compile(name, handler);
         if (!compiled)
             return this;
         compiled.__hooked = true;
         proto[name] = compiled;
         return this;
     }
-    /**
-     * Adds pre hooks to method.
-     *
-     * @param name the name of the method to bind to.
-     * @param funcs the method or methods to wrap with hooks.
-     */
-    pre(name, ...funcs) {
+    pre(name, ...handlers) {
+        const funcs = utils_1.flatten(handlers);
         const options = this.options;
         const proto = this.proto || this;
+        if (Array.isArray(name)) {
+            name.forEach(n => {
+                this.pre(n, funcs);
+            });
+            return this;
+        }
         if (!utils_1.isHookable(name, proto, options.exclude || []))
             return this;
         if (funcs.length > 1)
@@ -257,15 +259,16 @@ class Mustad {
             this.hook(name, proto[name]);
         return this;
     }
-    /**
-     * Adds post hooks to method.
-     *
-     * @param name the name of the method to bind to.
-     * @param funcs the method or methods to wrap with hooks.
-     */
-    post(name, ...funcs) {
+    post(name, ...handlers) {
+        const funcs = utils_1.flatten(handlers);
         const options = this.options;
         const proto = this.proto || this;
+        if (Array.isArray(name)) {
+            name.forEach(n => {
+                this.post(n, funcs);
+            });
+            return this;
+        }
         if (!utils_1.isHookable(name, proto, options.exclude))
             return this;
         if (funcs.length > 1)
@@ -276,21 +279,54 @@ class Mustad {
         return this;
     }
     preExec(name, handler, args, ...funcs) {
+        if (utils_1.isArray(handler)) {
+            if (!utils_1.isUndefined(args))
+                funcs.unshift(args);
+            args = handler;
+            handler = undefined;
+        }
+        if (utils_1.isFunction(args)) {
+            funcs.unshift(args);
+            args = undefined;
+        }
+        args = args || [];
+        handler = handler || this.proto[name];
+        if (!handler)
+            throw new Error(`preExec cannot execute undefined handler for ${name}`);
+        const compiled = this.compile(name, handler);
         return;
     }
     postExec(name, handler, args, ...funcs) {
+        if (utils_1.isArray(handler)) {
+            if (!utils_1.isUndefined(args))
+                funcs.unshift(args);
+            args = handler;
+            handler = undefined;
+        }
+        if (utils_1.isFunction(args)) {
+            funcs.unshift(args);
+            args = undefined;
+        }
+        args = args || [];
         return;
+    }
+    /**
+     * Returns a list of hooked methods.
+     */
+    list() {
+        return Object.keys(this.proto).filter(v => utils_1.isHooked(this.proto[v]));
     }
 }
 exports.Mustad = Mustad;
 function wrap(proto, instance = new Mustad()) {
     const _proto = proto;
     instance.proto = proto;
+    _proto.mustad = instance;
     _proto.pre = instance.pre.bind(instance);
     _proto.post = instance.post.bind(instance);
     _proto.preExec = instance.preExec.bind(instance);
     _proto.postExec = instance.postExec.bind(instance);
-    return proto;
+    return _proto;
 }
 exports.wrap = wrap;
 //# sourceMappingURL=mustad.js.map
