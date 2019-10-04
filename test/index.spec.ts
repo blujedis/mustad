@@ -7,6 +7,9 @@ const base = {
   },
   getNameProm(name) {
     return Promise.resolve(`My name is ${name}`);
+  },
+  notHooked() {
+    //
   }
 };
 
@@ -24,6 +27,11 @@ api.post(['getName', 'getNameProm'], (next, result) => {
 
 describe('Mustad', () => {
 
+  it('Should list hooked methods in prototype.', () => {
+    const list = api.mustad.list();
+    assert.deepEqual(list, ['getName', 'getNameProm']);
+  });
+
   it('Should handle callback method.', (done) => {
     api.getName('Milton Waddams', (err, result) => {
       assert.equal('My name is Milton Waddams', result);
@@ -39,7 +47,7 @@ describe('Mustad', () => {
       });
   });
 
-  it('Should add async pre method.', (done) => {
+  it('Should add async pre method using timeout calling next(true).', (done) => {
 
     api.pre('getName', (next, name) => {
       setTimeout(() => {
@@ -53,6 +61,19 @@ describe('Mustad', () => {
       assert.equal('My name is Peter Gibbons', result);
       done();
     });
+
+  });
+
+  it('Should add async pre method which returns promise.', (done) => {
+
+    api.pre('getName', (next, name) => {
+      return Promise.resolve('Milton Waddams Handle');
+    });
+
+    api.getName('Milton Waddams', (err, result) => {
+      assert.equal('My name is Peter Gibbons', result);
+      done();
+    })
 
   });
 

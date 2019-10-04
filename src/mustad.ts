@@ -131,6 +131,7 @@ export class Mustad<T = any> {
       // User returned a promise call
       // and convert to callback.
       if (isPromise(result)) {
+        next(true);
         const { err, data } = await me(result);
         next(err, data);
       }
@@ -479,10 +480,18 @@ export class Mustad<T = any> {
     return;
   }
 
+  /**
+   * Returns a list of hooked methods.
+   */
+  list() {
+    return Object.keys(this.proto).filter(v => isHooked(this.proto[v]));
+  }
+
 }
 
 export function wrap<T>(proto: T, instance: Mustad<T> = new Mustad<T>()) {
-  type ComputedType = T & Pick<Mustad<T>, 'pre' | 'post' | 'preExec' | 'postExec'>;
+  type Picked = Pick<Mustad<T>, 'pre' | 'post' | 'preExec' | 'postExec'>;
+  type ComputedType = T & Picked & { mustad: Mustad<T>; };
   const _proto = proto as ComputedType;
   instance.proto = proto;
   _proto.mustad = instance;
