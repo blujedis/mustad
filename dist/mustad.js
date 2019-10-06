@@ -77,7 +77,7 @@ class Mustad {
                 this.applyHooks(args, handlers, meta, done);
             });
         }
-        const fn = handlers.shift();
+        const fn = meta.context ? handlers.shift().bind(meta.context) : handlers.shift();
         const fname = meta.name;
         let wrapper;
         const next = (err, ...nargs) => {
@@ -95,7 +95,7 @@ class Mustad {
         };
         // Get the result allow user to call next()
         // return true/false, a Promise or an Error.
-        wrapper = utils_1.once(next);
+        wrapper = utils_1.once(next, meta.context);
         const result = fn(wrapper, ...args);
         // Result was returned, callback NOT called.
         // ensure value is not function where user
@@ -178,28 +178,48 @@ class Mustad {
         });
     }
     /**
+     * Gets allowable method names.
+     *
+     * @param proto the prototype to get methods for.
+     * @param include iincluded allowable methods names.
+     * @param exclude excluded non allowable method names.
+     */
+    allowableMethods(proto, include, exclude) {
+        proto = proto || this.proto;
+        include = include || this.options.include || [];
+        exclude = exclude || this.options.exclude || [];
+        // If included is empty allow any method.
+        if (!include.length)
+            include = Object.getOwnPropertyNames(proto);
+        return include.filter(k => !exclude.includes(k));
+    }
+    /**
      * Compiles a handler with pre and post hooks.
      *
      * @param name tne name of the handler to compile.
      * @param handler the handler to be compiled.
-     * @param context the context to be applied.
+     * @param context optional context to be applied.
      */
-    compile(name, handler) {
-        if (utils_1.isHooked(handler))
-            return null;
-        if (!utils_1.isHookable(name, handler, this.options.exclude))
-            throw new Error(`Cannot bind hook to unknown or prohibited or previously hooked method ${name}.`);
+    compile(name, handler, context, execType) {
+        if (!handler)
+            throw new Error(`Failed to compiled undefined handler for ${name}.`);
         // Initialize the hooks in map.
         this.pres.init(name);
         this.posts.init(name);
         const mustad = this;
         const compiled = async (...args) => {
-            const pres = this.pres.get(name).slice(0);
-            const posts = this.posts.get(name).slice(0);
+            let pres = this.pres.get(name).slice(0);
+            let posts = this.posts.get(name).slice(0);
             const cb = utils_1.isFunction(args[args.length - 1]) ? args.pop() : null;
             let nextArgs = args.slice(0);
-            if (this.options.enablePre && pres.length) {
-                const { err: preErr, data: preData } = await utils_1.me(this.wrapHook(this.applyHooks.bind(this), nextArgs, pres, { mustad, name }));
+            if (execType) {
+                if (execType === 'pre')
+                    posts = [];
+                else
+                    pres = [];
+            }
+            if ((this.options.enablePre || execType === 'pre') && pres.length) {
+                const { err: preErr, data: preData } = await utils_1.me(this.wrapHook(this.applyHooks.bind(this), nextArgs, pres, { context, mustad, name }));
                 if (preErr)
                     return this.handleError(preErr, cb);
                 nextArgs = preData;
@@ -208,8 +228,8 @@ class Mustad {
             nextArgs = hData;
             if (hErr)
                 return this.handleError(hErr, cb);
-            if (this.options.enablePost && posts.length) {
-                const { err: postErr, data: postData } = await utils_1.me(this.wrapHook(this.applyHooks.bind(this), nextArgs, posts, { mustad, name }));
+            if ((this.options.enablePost || execType === 'post') && posts.length) {
+                const { err: postErr, data: postData } = await utils_1.me(this.wrapHook(this.applyHooks.bind(this), nextArgs, posts, { context, mustad, name }));
                 if (postErr)
                     return this.handleError(postErr, cb);
                 nextArgs = postData.length === 1 ? postData[0] : postData;
@@ -230,85 +250,104 @@ class Mustad {
      *
      * @param name the name of the method to apply hook to.
      * @param handler the handler to be wrapped.
+     * @param context optional context to bind to.
      */
-    hook(name, handler) {
+    hook(name, handler, context) {
+        if (utils_1.isHooked(handler))
+            return null;
+        if (!utils_1.isHookable(name, this.allowableMethods()) || !utils_1.isHookable(handler))
+            throw new Error(`Cannot bind hook to unknown, prohibited or previously hooked method ${name}.`);
         const proto = this.proto || this;
-        const compiled = this.compile(name, handler);
+        const compiled = this.compile(name, handler, context);
         if (!compiled)
             return this;
-        compiled.__hooked = true;
+        compiled.__hooked = handler;
         proto[name] = compiled;
         return this;
     }
-    pre(name, ...handlers) {
-        const funcs = utils_1.flatten(handlers);
+    pre(name, context, hooks) {
         const options = this.options;
         const proto = this.proto || this;
+        hooks = utils_1.toArray(hooks);
+        if (utils_1.isFunction(context)) {
+            hooks.unshift(context);
+            context = undefined;
+        }
         if (Array.isArray(name)) {
             name.forEach(n => {
-                this.pre(n, funcs);
+                this.pre(n, context, hooks);
             });
             return this;
         }
-        if (!utils_1.isHookable(name, proto, options.exclude || []))
+        if (hooks.length > 1) {
+            hooks.forEach(m => this.pre.call(this, name, context, m));
             return this;
-        if (funcs.length > 1)
-            return funcs.forEach(m => this.pre.call(this, name, m));
-        this.pres.push(name, funcs[0]);
+        }
+        this.pres.push(name, hooks[0]);
         if (options.lazy)
             this.hook(name, proto[name]);
         return this;
     }
-    post(name, ...handlers) {
-        const funcs = utils_1.flatten(handlers);
+    post(name, context, hooks) {
         const options = this.options;
         const proto = this.proto || this;
+        hooks = utils_1.toArray(hooks);
+        if (utils_1.isFunction(context)) {
+            hooks.unshift(context);
+            context = undefined;
+        }
         if (Array.isArray(name)) {
             name.forEach(n => {
-                this.post(n, funcs);
+                this.post(n, context, hooks);
             });
             return this;
         }
-        if (!utils_1.isHookable(name, proto, options.exclude))
+        if (hooks.length > 1) {
+            hooks.forEach(m => this.post.call(this, name, context, m));
             return this;
-        if (funcs.length > 1)
-            return funcs.forEach(m => this.post.call(this, name, m));
-        this.posts.push(name, funcs[0]);
+        }
+        this.posts.push(name, hooks[0]);
         if (options.lazy)
             this.hook(name, proto[name]);
         return this;
     }
-    preExec(name, handler, args, ...funcs) {
-        if (utils_1.isArray(handler)) {
-            if (!utils_1.isUndefined(args))
-                funcs.unshift(args);
-            args = handler;
-            handler = undefined;
+    preExec(name, args, context, cb) {
+        if (utils_1.isFunction(context)) {
+            cb = context;
+            context = undefined;
         }
-        if (utils_1.isFunction(args)) {
-            funcs.unshift(args);
-            args = undefined;
-        }
+        let handler = this.proto[name];
+        handler = handler.__hooked || handler;
         args = args || [];
-        handler = handler || this.proto[name];
         if (!handler)
             throw new Error(`preExec cannot execute undefined handler for ${name}`);
-        const compiled = this.compile(name, handler);
-        return;
+        if (cb)
+            args.push(cb);
+        // No hooks just call the handler.
+        // context NOT applied to handler only
+        // applied to hooks.
+        if (!this.pres.get(name).length)
+            return handler(...args);
+        return this.compile(name, handler, context)(...args);
     }
-    postExec(name, handler, args, ...funcs) {
-        if (utils_1.isArray(handler)) {
-            if (!utils_1.isUndefined(args))
-                funcs.unshift(args);
-            args = handler;
-            handler = undefined;
+    postExec(name, args, context, cb) {
+        if (utils_1.isFunction(context)) {
+            cb = context;
+            context = undefined;
         }
-        if (utils_1.isFunction(args)) {
-            funcs.unshift(args);
-            args = undefined;
-        }
+        let handler = this.proto[name];
+        handler = handler.__hooked || handler;
         args = args || [];
-        return;
+        if (!handler)
+            throw new Error(`postExec cannot execute undefined handler for ${name}`);
+        if (cb)
+            args.push(cb);
+        // No hooks just call the handler.
+        // context NOT applied to handler only
+        // applied to hooks.
+        if (!this.posts.get(name).length)
+            return handler(...args);
+        return this.compile(name, handler, context)(...args);
     }
     /**
      * Returns a list of hooked methods.

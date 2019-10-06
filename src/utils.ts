@@ -8,7 +8,7 @@ export const isUndefined = val => typeof val === 'undefined';
 export const hasOwn = (obj: object, key: string) => obj.hasOwnProperty(key);
 export const toArray = val => isUndefined(val) && [] || (Array.isArray(val) && val) || [val];
 export const isArray = val => Array.isArray(val);
-export const isHooked = (handler: Handler) => (handler as any).__hooked === true;
+export const isHooked = (handler: Handler) => isFunction((handler as any).__hooked);
 
 /**
  * Flattens multi dimensional array.
@@ -16,34 +16,49 @@ export const isHooked = (handler: Handler) => (handler as any).__hooked === true
  * @param arr the array to be flattened. 
  */
 export function flatten<T = any>(arr: T[]): T[] {
-  return arr.reduce((a, c) => [ ...a, ...(Array.isArray(c) ? flatten(c) : [c])], []);
+  return arr.reduce((a, c) => [...a, ...(Array.isArray(c) ? flatten(c) : [c])], []);
 }
 
 /**
- * Checks if method exists, is function and isn't already "__hooked".
+ * Checks if key is hookable, is on prototype, is in allowable keys and is NOT __hooked.
  * 
- * @param key the proto key to lookup.
- * @param proto the prototype context object where handler resides.
- * @param exclude array of excluded keys.
+ * @param key the key to inpsect as hookable.
+ * @param proto the prototype that the key belongs to.
+ * @param allowable the allowable hookable keys.
  */
-export function isHookable<T extends object>(key: string, proto: T, exclude: string[]): boolean;
+export function isHookable<T extends object>(key: string, proto: T, allowable: string[]): boolean;
 
 /**
- * Checks if function is already "__hooked" or is excluded.
+ * Checks if key is contained in hookable keys.
  * 
- * @param key the proto key to lookup.
- * @param handler existing handler function.
- * @param exclude array of excluded keys.
+ * @param key the key to inspect if is hookable.
+ * @param allowable the allowable hookable keys.
  */
-export function isHookable(key: string, handler: Handler, exclude: string[]): boolean;
-export function isHookable(key: string, exclude: string[]): boolean;
-export function isHookable<T extends object>(key: string, proto: T | Handler | string[], exclude?: string[]) {
-  if (Array.isArray(proto))
-    return !proto.includes(key);
-  if (isFunction(proto))
-    return !(proto as any).__hooked;
-  exclude = exclude || [];
-  return hasOwn(proto, key) && !exclude.includes(key) && isFunction(proto[key]);
+export function isHookable(key: string, allowable: string[]): boolean;
+
+/**
+ * Ensures handler is NOT __hooked.
+ * 
+ * @param handler a handler to check if is __hooked.
+ */
+export function isHookable(handler: Handler): boolean;
+export function isHookable<T extends object>(key: string | Handler, proto?: T | string[], allowable: string[] = []) {
+
+  if (isFunction(key))
+    return !(key as any).__hooked;
+
+  if (isArray(proto)) {
+    allowable = proto as string[];
+    proto = undefined;
+  }
+
+  allowable = allowable || [];
+
+  if (proto)
+    return allowable.includes(key as string) && isFunction(proto[key as string]) && !proto[key as string].__hooked;
+
+  return allowable.includes(key as string);
+
 }
 
 /**

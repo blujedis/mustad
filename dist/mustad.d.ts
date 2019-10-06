@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { MustadMap } from './map';
-import { IOptions, NextHandler, Handler, IMeta } from './types';
+import { IOptions, NextHandler, Handler, IMeta, NodeCallback } from './types';
 export declare class Mustad<T = any> {
     proto: T | Mustad;
     pres: MustadMap;
@@ -29,7 +29,7 @@ export declare class Mustad<T = any> {
      * @param meta metadata for ensuring hooks have completed or timedout.
      * @param done function called on done.
      */
-    protected applyHooks(args: any[], handlers: NextHandler[], meta: IMeta, done: (err: Error, data?: any[]) => void): Promise<void | NodeJS.Immediate>;
+    protected applyHooks(args: any[], handlers: NextHandler[], meta: IMeta, done: NodeCallback<any[]>): Promise<void | NodeJS.Immediate>;
     /**
      * Wraps a hook function.
      *
@@ -47,84 +47,125 @@ export declare class Mustad<T = any> {
      */
     protected wrapHandler(fn: (...args: any[]) => void | Promise<any>, args: any[], cb?: any): Promise<any>;
     /**
+     * Gets allowable method names.
+     *
+     * @param proto the prototype to get methods for.
+     * @param include iincluded allowable methods names.
+     * @param exclude excluded non allowable method names.
+     */
+    private allowableMethods;
+    /**
      * Compiles a handler with pre and post hooks.
      *
      * @param name tne name of the handler to compile.
      * @param handler the handler to be compiled.
-     * @param context the context to be applied.
+     * @param context optional context to be applied.
      */
-    compile(name: string, handler: Handler): ((...args: any[]) => any) & {
-        __hooked?: boolean;
+    compile<C extends object>(name: string, handler: Handler, context?: C, execType?: 'pre' | 'post'): ((...args: any[]) => any) & {
+        __hooked?: Handler;
     };
     /**
      * Binds hook to handler.
      *
      * @param name the name of the method to apply hook to.
      * @param handler the handler to be wrapped.
+     * @param context optional context to bind to.
      */
-    hook(name: string, handler: Handler): this;
+    hook<C extends object>(name: string, handler: Handler, context?: C): this;
     /**
      * Adds pre hooks to method.
      *
      * @param name the name of the method to bind to.
-     * @param handlers the method or methods to wrap with hooks.
+     * @param hooks the hooks to be compiled.
      */
-    pre(name: string, handlers: NextHandler[]): this;
+    pre(name: string, hooks: NextHandler | NextHandler[]): this;
     /**
      * Adds pre hooks to method.
      *
      * @param names the names of the methods to bind to.
-     * @param handlers the method or methods to wrap with hooks.
+     * @param hooks the hooks to be compiled.
      */
-    pre(names: string[], handlers: NextHandler[]): this;
+    pre(names: string[], hooks: NextHandler | NextHandler[]): this;
     /**
      * Adds pre hooks to method.
      *
      * @param name the name of the method to bind to.
-     * @param handlers the method or methods to wrap with hooks.
+     * @param context optional context to apply to handlers.
+     * @param hooks the hooks to be compiled.
      */
-    pre(name: string, ...handlers: NextHandler[]): this;
+    pre<C extends object>(name: string, context: C, hooks: NextHandler | NextHandler[]): this;
     /**
      * Adds pre hooks to method.
      *
      * @param names the names of the methods to bind to.
-     * @param handlers the method or methods to wrap with hooks.
+     * @param context optional context to apply to handlers.
+     * @param hooks the hooks to be compiled.
      */
-    pre(names: string[], ...handlers: NextHandler[]): this;
+    pre<C extends object>(names: string[], context: C, hooks: NextHandler | NextHandler[]): this;
     /**
      * Adds post hooks to method.
      *
      * @param name the name of the method to bind to.
-     * @param handlers the method or methods to wrap with hooks.
+     * @param hooks the hooks to be compiled.
      */
-    post(name: string, handlers: NextHandler[]): this;
+    post(name: string, hooks: NextHandler | NextHandler[]): this;
     /**
      * Adds post hooks to method.
      *
      * @param names the names of the methods to bind to.
-     * @param handlers the method or methods to wrap with hooks.
+     * @param hooks the hooks to be compiled.
      */
-    post(names: string[], handlers: NextHandler[]): this;
+    post(names: string[], hooks: NextHandler | NextHandler[]): this;
     /**
      * Adds post hooks to method.
      *
      * @param name the name of the method to bind to.
-     * @param handlers the method or methods to wrap with hooks.
+     * @param context optional context to apply to handlers.
+     * @param hooks the hooks to be compiled
      */
-    post(name: string, ...handlers: NextHandler[]): this;
+    post<C extends object>(name: string, context: C, hooks: NextHandler | NextHandler[]): this;
     /**
      * Adds post hooks to method.
      *
      * @param names the names of the methods to bind to.
-     * @param handlers the method or methods to wrap with hooks.
+     * @param context optional context to apply to hooks.
+     * @param hooks the hooks to be compiled.
      */
-    post(names: string[], ...handlers: NextHandler[]): this;
-    preExec(name: string, handler: Handler, args: any[], ...funcs: NextHandler[]): any;
-    preExec(name: string, args: any[], ...funcs: NextHandler[]): any;
-    preExec(name: string, args: any[]): any;
-    postExec(name: string, handler: Handler, args: any[], ...funcs: NextHandler[]): any;
-    postExec(name: string, args: any[], ...funcs: NextHandler[]): any;
-    postExec(name: string, args: any[]): any;
+    post<C extends object>(names: string[], context: C, hooks: NextHandler | NextHandler[]): this;
+    /**
+     * Staically calls a method and it's pre hooks.
+     *
+     * @param name the name of the method to exec.
+     * @param args the arguments to provide to the method.
+     * @param context the context to be applied to hooks.
+     * @param cb an optional callback on done.
+     */
+    preExec<C extends object, D = any>(name: string, args: any[], context: C, cb?: NodeCallback<D>): void | Promise<D>;
+    /**
+     * Staically calls a method and it's pre hooks.
+     *
+     * @param name the name of the method to exec.
+     * @param args the arguments to provide to the method.
+     * @param cb an optional callback on done.
+     */
+    preExec<D = any>(name: string, args: any[], cb?: NodeCallback<D>): void | Promise<D>;
+    /**
+     * Staically calls a method and it's post hooks.
+     *
+     * @param name the name of the method to exec.
+     * @param args the arguments to provide to the method.
+     * @param context the context to be applied to hooks.
+     * @param cb an optional callback on done.
+     */
+    postExec<C extends object, D = any>(name: string, args: any[], context: C, cb?: NodeCallback<D>): void | Promise<D>;
+    /**
+     * Staically calls a method and it's post hooks.
+     *
+     * @param name the name of the method to exec.
+     * @param args the arguments to provide to the method.
+     * @param cb an optional callback on done.
+     */
+    postExec<D = any>(name: string, args: any[], cb?: NodeCallback<D>): void | Promise<D>;
     /**
      * Returns a list of hooked methods.
      */

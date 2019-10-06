@@ -8,6 +8,9 @@ const base = {
   getNameProm(name) {
     return Promise.resolve(`My name is ${name}`);
   },
+  getAge(age, cb) {
+    cb(null, `I am ${age} years old`);
+  },
   notHooked() {
     //
   }
@@ -24,11 +27,19 @@ api.post(['getName', 'getNameProm'], (next, result) => {
   next();
 });
 
+api.pre('getAge', (next, age) => {
+  next();
+});
+
+api.pre('getAge', (next, result) => {
+  next();
+});
+
 describe('Mustad', () => {
 
   it('Should list hooked methods in prototype.', () => {
     const list = api.mustad.list();
-    assert.deepEqual(list, ['getName', 'getNameProm']);
+    assert.deepEqual(list, ['getName', 'getNameProm', 'getAge']);
   });
 
   it('Should handle callback method.', (done) => {
@@ -75,5 +86,22 @@ describe('Mustad', () => {
     });
 
   });
+
+  it('Should run pre manually using preExec', (done) => {
+
+    api.preExec('getAge', [22], (err, result) => {
+
+      done();
+    });
+
+  });
+
+  // it('Should run post manually using postExec', (done) => {
+
+  //   api.postExec('getAge', [22], (err, result) => {
+  //     done();
+  //   });
+
+  // });
 
 });

@@ -8,7 +8,7 @@ exports.isUndefined = val => typeof val === 'undefined';
 exports.hasOwn = (obj, key) => obj.hasOwnProperty(key);
 exports.toArray = val => exports.isUndefined(val) && [] || (Array.isArray(val) && val) || [val];
 exports.isArray = val => Array.isArray(val);
-exports.isHooked = (handler) => handler.__hooked === true;
+exports.isHooked = (handler) => exports.isFunction(handler.__hooked);
 /**
  * Flattens multi dimensional array.
  *
@@ -18,13 +18,17 @@ function flatten(arr) {
     return arr.reduce((a, c) => [...a, ...(Array.isArray(c) ? flatten(c) : [c])], []);
 }
 exports.flatten = flatten;
-function isHookable(key, proto, exclude) {
-    if (Array.isArray(proto))
-        return !proto.includes(key);
-    if (exports.isFunction(proto))
-        return !proto.__hooked;
-    exclude = exclude || [];
-    return exports.hasOwn(proto, key) && !exclude.includes(key) && exports.isFunction(proto[key]);
+function isHookable(key, proto, allowable = []) {
+    if (exports.isFunction(key))
+        return !key.__hooked;
+    if (exports.isArray(proto)) {
+        allowable = proto;
+        proto = undefined;
+    }
+    allowable = allowable || [];
+    if (proto)
+        return allowable.includes(key) && exports.isFunction(proto[key]) && !proto[key].__hooked;
+    return allowable.includes(key);
 }
 exports.isHookable = isHookable;
 /**

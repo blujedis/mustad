@@ -15,22 +15,26 @@ export declare const isHooked: (handler: Handler) => boolean;
  */
 export declare function flatten<T = any>(arr: T[]): T[];
 /**
- * Checks if method exists, is function and isn't already "__hooked".
+ * Checks if key is hookable, is on prototype, is in allowable keys and is NOT __hooked.
  *
- * @param key the proto key to lookup.
- * @param proto the prototype context object where handler resides.
- * @param exclude array of excluded keys.
+ * @param key the key to inpsect as hookable.
+ * @param proto the prototype that the key belongs to.
+ * @param allowable the allowable hookable keys.
  */
-export declare function isHookable<T extends object>(key: string, proto: T, exclude: string[]): boolean;
+export declare function isHookable<T extends object>(key: string, proto: T, allowable: string[]): boolean;
 /**
- * Checks if function is already "__hooked" or is excluded.
+ * Checks if key is contained in hookable keys.
  *
- * @param key the proto key to lookup.
- * @param handler existing handler function.
- * @param exclude array of excluded keys.
+ * @param key the key to inspect if is hookable.
+ * @param allowable the allowable hookable keys.
  */
-export declare function isHookable(key: string, handler: Handler, exclude: string[]): boolean;
-export declare function isHookable(key: string, exclude: string[]): boolean;
+export declare function isHookable(key: string, allowable: string[]): boolean;
+/**
+ * Ensures handler is NOT __hooked.
+ *
+ * @param handler a handler to check if is __hooked.
+ */
+export declare function isHookable(handler: Handler): boolean;
 /**
  * Wraps function to ensure it is only called once.
  *

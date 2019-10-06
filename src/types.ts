@@ -1,6 +1,8 @@
 import { MustadMap } from './map';
 import { Mustad } from './mustad';
 
+export type NodeCallback<T = any> = (err: Error, data?: T) => void;
+
 export type Handler = <T = any>(...args: any[]) => void | Promise<T>;
 
 export interface IHookHandler {
