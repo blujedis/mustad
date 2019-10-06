@@ -1,7 +1,8 @@
 {
   "name": "mustad",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Pre and post hooks for functions such as node, mongodb etc.",
+  "main": "dist/index.js",
   "scripts": {
     "build": "rimraf dist && tsc -b",
     "start": "tsc -w",
