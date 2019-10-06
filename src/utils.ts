@@ -8,7 +8,7 @@ export const isUndefined = val => typeof val === 'undefined';
 export const hasOwn = (obj: object, key: string) => obj.hasOwnProperty(key);
 export const toArray = val => isUndefined(val) && [] || (Array.isArray(val) && val) || [val];
 export const isArray = val => Array.isArray(val);
-export const isHooked = (handler: Handler) => isFunction((handler as any).__hooked);
+export const isHooked = (handler: Handler) => isFunction(handler) && (handler as any).__hooked;
 
 /**
  * Flattens multi dimensional array.
@@ -45,7 +45,7 @@ export function isHookable(handler: Handler): boolean;
 export function isHookable<T extends object>(key: string | Handler, proto?: T | string[], allowable: string[] = []) {
 
   if (isFunction(key))
-    return !(key as any).__hooked;
+    return !isHooked(key as any);
 
   if (isArray(proto)) {
     allowable = proto as string[];

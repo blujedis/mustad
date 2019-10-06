@@ -2,11 +2,11 @@
 import { MustadMap } from './map';
 import { IOptions, NextHandler, Handler, IMeta, NodeCallback } from './types';
 export declare class Mustad<T = any> {
-    proto: T | Mustad;
+    proto: T;
     pres: MustadMap;
     posts: MustadMap;
     options: IOptions;
-    constructor(options?: IOptions);
+    constructor(proto: T, options?: IOptions);
     /**
      * Merge args when next is called.
      *

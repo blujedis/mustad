@@ -7,7 +7,7 @@ export declare const isUndefined: (val: any) => boolean;
 export declare const hasOwn: (obj: object, key: string) => boolean;
 export declare const toArray: (val: any) => any[];
 export declare const isArray: (val: any) => boolean;
-export declare const isHooked: (handler: Handler) => boolean;
+export declare const isHooked: (handler: Handler) => any;
 /**
  * Flattens multi dimensional array.
  *

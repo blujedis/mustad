@@ -18,13 +18,16 @@ const DEFAULTS: IOptions = {
 
 export class Mustad<T = any> {
 
-  proto: T | Mustad;
+  proto: T;
   pres = new MustadMap();
   posts = new MustadMap();
   options: IOptions;
 
-  constructor(options: IOptions = {}) {
+  constructor(proto: T, options: IOptions = {}) {
     options = { ...DEFAULTS, ...options };
+    if (!proto)
+      throw new Error(`Cannot initialize Mustad using proto of undefined.`);
+    this.proto = proto;
     this.options = options;
   }
 
@@ -201,48 +204,30 @@ export class Mustad<T = any> {
 
       const result = fn(...args);
 
+      if (isPromise(result))
+        return result as Promise<any>;
+
       return new Promise((res, rej) => {
-
-        if (!isPromise(result)) {
-
-          if (isError(result))
-            return rej(result);
-
-          return res(result);
-
-        }
-
-        (result as Promise<any>)
-          .then(iRes => {
-            if (isError(iRes))
-              return rej(iRes);
-            res(iRes);
-          })
-          .catch(iRej => {
-            rej(iRej);
-          });
-
+        if (isError(result))
+          return rej(result);
+        return res(result);
       });
 
     }
 
-    // Handler has callback.
-    return new Promise((res, rej) => {
+    else {
 
-      args = [...args, (err: Error | null, ...data: any[]) => {
+      // Handler has callback.
+      return new Promise((res, rej) => {
+        args = [...args, (err: Error | null, ...data: any[]) => {
+          if (err)
+            return rej(err);
+          res(data);
+        }];
+        fn(...args);
+      });
 
-        if (err)
-          return rej(err);
-
-        data = data.length === 1 ? data[0] : data;
-
-        res(data);
-
-      }];
-
-      fn(...args);
-
-    });
+    }
 
   }
 
@@ -307,7 +292,7 @@ export class Mustad<T = any> {
 
       }
 
-      const { err: hErr, data: hData } = await me(this.wrapHandler(handler, nextArgs, cb));
+      const { err: hErr, data: hData } = await me(this.wrapHandler(handler.bind(this.proto), nextArgs, cb));
 
       nextArgs = hData;
 
@@ -407,6 +392,7 @@ export class Mustad<T = any> {
    * @param hooks the hooks to be compiled.
    */
   pre<C extends object>(names: string[], context: C, hooks: NextHandler | NextHandler[]): this;
+
   pre<C extends object>(
     name: string | string[], context: C | NextHandler, hooks?: NextHandler | NextHandler[]) {
 
@@ -421,13 +407,13 @@ export class Mustad<T = any> {
 
     if (Array.isArray(name)) {
       name.forEach(n => {
-        this.pre(n, context, hooks);
+        this.pre(n as any, context, hooks);
       });
       return this;
     }
 
     if (hooks.length > 1) {
-      hooks.forEach(m => this.pre.call(this, name as any, context, m));
+      hooks.forEach(m => this.pre(name as any, context, m));
       return this;
     }
 
@@ -473,6 +459,7 @@ export class Mustad<T = any> {
    * @param hooks the hooks to be compiled.
    */
   post<C extends object>(names: string[], context: C, hooks: NextHandler | NextHandler[]): this;
+
   post<C extends object>(
     name: string | string[], context: C | NextHandler, hooks?: NextHandler | NextHandler[]) {
     const options = this.options;
@@ -492,7 +479,7 @@ export class Mustad<T = any> {
     }
 
     if (hooks.length > 1) {
-      hooks.forEach(m => this.post.call(this, name as any, context, m));
+      hooks.forEach(m => this.post(name as any, context, m));
       return this;
     }
 
@@ -607,11 +594,11 @@ export class Mustad<T = any> {
 
 }
 
-export function wrap<T>(proto: T, instance: Mustad<T> = new Mustad<T>()) {
+export function wrap<T>(proto: T, instance?: Mustad<T>) {
   type Picked = Pick<Mustad<T>, 'pre' | 'post' | 'preExec' | 'postExec'>;
   type ComputedType = T & Picked & { mustad: Mustad<T>; };
   const _proto = proto as ComputedType;
-  instance.proto = proto;
+  instance = instance || new Mustad<T>(proto);
   _proto.mustad = instance;
   _proto.pre = instance.pre.bind(instance);
   _proto.post = instance.post.bind(instance);

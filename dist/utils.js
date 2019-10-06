@@ -8,7 +8,7 @@ exports.isUndefined = val => typeof val === 'undefined';
 exports.hasOwn = (obj, key) => obj.hasOwnProperty(key);
 exports.toArray = val => exports.isUndefined(val) && [] || (Array.isArray(val) && val) || [val];
 exports.isArray = val => Array.isArray(val);
-exports.isHooked = (handler) => exports.isFunction(handler.__hooked);
+exports.isHooked = (handler) => exports.isFunction(handler) && handler.__hooked;
 /**
  * Flattens multi dimensional array.
  *
@@ -20,7 +20,7 @@ function flatten(arr) {
 exports.flatten = flatten;
 function isHookable(key, proto, allowable = []) {
     if (exports.isFunction(key))
-        return !key.__hooked;
+        return !exports.isHooked(key);
     if (exports.isArray(proto)) {
         allowable = proto;
         proto = undefined;

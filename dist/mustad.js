@@ -13,10 +13,13 @@ const DEFAULTS = {
     lazy: true
 };
 class Mustad {
-    constructor(options = {}) {
+    constructor(proto, options = {}) {
         this.pres = new map_1.MustadMap();
         this.posts = new map_1.MustadMap();
         options = { ...DEFAULTS, ...options };
+        if (!proto)
+            throw new Error(`Cannot initialize Mustad using proto of undefined.`);
+        this.proto = proto;
         this.options = options;
     }
     /**
@@ -149,33 +152,25 @@ class Mustad {
         args = utils_1.toArray(args);
         if (!cb) {
             const result = fn(...args);
+            if (utils_1.isPromise(result))
+                return result;
             return new Promise((res, rej) => {
-                if (!utils_1.isPromise(result)) {
-                    if (utils_1.isError(result))
-                        return rej(result);
-                    return res(result);
-                }
-                result
-                    .then(iRes => {
-                    if (utils_1.isError(iRes))
-                        return rej(iRes);
-                    res(iRes);
-                })
-                    .catch(iRej => {
-                    rej(iRej);
-                });
+                if (utils_1.isError(result))
+                    return rej(result);
+                return res(result);
             });
         }
-        // Handler has callback.
-        return new Promise((res, rej) => {
-            args = [...args, (err, ...data) => {
-                    if (err)
-                        return rej(err);
-                    data = data.length === 1 ? data[0] : data;
-                    res(data);
-                }];
-            fn(...args);
-        });
+        else {
+            // Handler has callback.
+            return new Promise((res, rej) => {
+                args = [...args, (err, ...data) => {
+                        if (err)
+                            return rej(err);
+                        res(data);
+                    }];
+                fn(...args);
+            });
+        }
     }
     /**
      * Gets allowable method names.
@@ -224,7 +219,7 @@ class Mustad {
                     return this.handleError(preErr, cb);
                 nextArgs = preData;
             }
-            const { err: hErr, data: hData } = await utils_1.me(this.wrapHandler(handler, nextArgs, cb));
+            const { err: hErr, data: hData } = await utils_1.me(this.wrapHandler(handler.bind(this.proto), nextArgs, cb));
             nextArgs = hData;
             if (hErr)
                 return this.handleError(hErr, cb);
@@ -280,7 +275,7 @@ class Mustad {
             return this;
         }
         if (hooks.length > 1) {
-            hooks.forEach(m => this.pre.call(this, name, context, m));
+            hooks.forEach(m => this.pre(name, context, m));
             return this;
         }
         this.pres.push(name, hooks[0]);
@@ -303,7 +298,7 @@ class Mustad {
             return this;
         }
         if (hooks.length > 1) {
-            hooks.forEach(m => this.post.call(this, name, context, m));
+            hooks.forEach(m => this.post(name, context, m));
             return this;
         }
         this.posts.push(name, hooks[0]);
@@ -357,9 +352,9 @@ class Mustad {
     }
 }
 exports.Mustad = Mustad;
-function wrap(proto, instance = new Mustad()) {
+function wrap(proto, instance) {
     const _proto = proto;
-    instance.proto = proto;
+    instance = instance || new Mustad(proto);
     _proto.mustad = instance;
     _proto.pre = instance.pre.bind(instance);
     _proto.post = instance.post.bind(instance);
