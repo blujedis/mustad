@@ -1,11 +1,13 @@
 {
   "name": "mustad",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Pre and post hooks for functions such as node, mongodb etc.",
   "main": "dist/index.js",
   "scripts": {
     "build": "rimraf dist && tsc -b",
     "start": "tsc -w",
+    "typedoc": "typedoc ./src --options ./typedoc.json --out ./docs",
+    "docs": "npm run typedoc && touch ./docs/.nojekll",
     "test": "mocha test/**/*.spec.ts* --require ./register.js --bail"
   },
   "files": [
@@ -31,6 +33,7 @@
     "rimraf": "^3.0.0",
     "ts-node": "^8.4.1",
     "tslint": "^5.20.0",
+    "typedoc": "^0.15.0",
     "typescript": "^3.6.3"
   }
 }
