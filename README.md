@@ -1,6 +1,7 @@
-<h1>
-  <img src="https://raw.githubusercontent.com/blujedis/mustad/master/fixtures/logo.png" width="225" />
-</h1>
+
+ <p align="left">
+  <a href="http://github.com/blujedis/mustad"><img src="https://raw.githubusercontent.com/blujedis/mustad/master/fixtures/logo.png" width="225" /></a>
+</p>
 
 Library to bind pre and post hooks to functions. Often used to wrap a method before and after making a query to a database such as Mongodb.
 

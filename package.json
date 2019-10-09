@@ -1,6 +1,6 @@
 {
   "name": "mustad",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Pre and post hooks for functions such as node, mongodb etc.",
   "main": "dist/index.js",
   "scripts": {
