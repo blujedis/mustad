@@ -65,16 +65,166 @@
 		<div class="col-8 col-content">
 			<div class="tsd-panel tsd-typography">
 				<h1>
-					<img src="fixtures/logo.png" width="225" />
+					<img src="https://raw.githubusercontent.com/blujedis/mustad/master/fixtures/logo.png" width="225" />
 				</h1>
 				<p>Library to bind pre and post hooks to functions. Often used to wrap a method before and after making a query to a database such as Mongodb.</p>
-				<a href="#getting-started" id="getting-started" style="color: inherit; text-decoration: none;">
-					<h2>Getting Started</h2>
+				<a href="#installation" id="installation" style="color: inherit; text-decoration: none;">
+					<h2>Installation</h2>
 				</a>
 				<p>Install the package.</p>
 				<pre><code class="language-sh">$ npm install mustad -s</code></pre>
 				<p>OR</p>
 				<pre><code class="language-sh">$ yarn add mustad</code></pre>
+				<a href="#getting-started" id="getting-started" style="color: inherit; text-decoration: none;">
+					<h2>Getting Started</h2>
+				</a>
+				<p>You can either wrap an existing class/api or manually bind your hooks.</p>
+				<p>Take for example a simple API that does some work with a database.</p>
+				<a href="#wrapping-proto" id="wrapping-proto" style="color: inherit; text-decoration: none;">
+					<h3>Wrapping Proto</h3>
+				</a>
+				<pre><code class="language-ts"><span class="hljs-keyword">import</span> { wrap } <span class="hljs-keyword">from</span> <span class="hljs-string">'mustad'</span>;
+<span class="hljs-keyword">import</span> db <span class="hljs-keyword">from</span> <span class="hljs-string">'./db'</span>; <span class="hljs-comment">// fake Mongodb import.</span>
+
+<span class="hljs-keyword">const</span> _api = {
+
+  <span class="hljs-keyword">async</span> findUser(queryOrId, options) {
+    <span class="hljs-keyword">const</span> user = <span class="hljs-keyword">await</span> db.collection(<span class="hljs-string">'user'</span>).findOne(queryOrId, options);
+    <span class="hljs-keyword">return</span> user;
+  } 
+
+};
+
+<span class="hljs-keyword">const</span> api = wrap(_api);
+
+api.pre(<span class="hljs-string">'findUser'</span>, <span class="hljs-function">(<span class="hljs-params">next, queryOrId, options</span>) =&gt;</span> {
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> queryOrId !== <span class="hljs-string">'object'</span>)
+    queryOrId = { _id: queryOrId } <span class="hljs-comment">// convert user ObjectId to query object.</span>
+  next(<span class="hljs-literal">null</span>, queryOrId); <span class="hljs-comment">// Mustad will append the missing "options" param if missing.</span>
+});</code></pre>
+				<a href="#implement-manually" id="implement-manually" style="color: inherit; text-decoration: none;">
+					<h3>Implement Manually</h3>
+				</a>
+				<p>You can also implement Mustad manually and use in a class.</p>
+				<pre><code class="language-ts"><span class="hljs-keyword">import</span> { Mustad } <span class="hljs-keyword">from</span> <span class="hljs-string">'mustad'</span>;
+
+<span class="hljs-keyword">class</span> MyClass {
+
+  <span class="hljs-keyword">constructor</span>(<span class="hljs-params"></span>) {
+    <span class="hljs-keyword">this</span>._mustad = <span class="hljs-keyword">new</span> Mustad(<span class="hljs-keyword">this</span>);
+  }
+
+  findUser(queryOrId, options) {
+    <span class="hljs-comment">// call database to find user.</span>
+  }
+
+  <span class="hljs-comment">// You might do it this way to limit binding</span>
+  <span class="hljs-comment">// to say only a few methods in your class.</span>
+  <span class="hljs-comment">// rather than allowing any method to be bound.</span>
+  pre(<span class="hljs-keyword">type</span>, handler) {
+
+    <span class="hljs-comment">// type here might be "update" for example so</span>
+    <span class="hljs-comment">// you abtract away here so that you can bind</span>
+    <span class="hljs-comment">// to multiple methods with the user only supplying</span>
+    <span class="hljs-comment">// one keyword.</span>
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">type</span> === <span class="hljs-string">'update'</span>)
+      <span class="hljs-keyword">this</span>._mustad.pre([<span class="hljs-string">'update'</span>, <span class="hljs-string">'updateOne'</span>, <span class="hljs-string">'findOneAndUpdate'</span>], handler);
+
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+
+  }
+
+}
+
+<span class="hljs-keyword">const</span> myClass = <span class="hljs-keyword">new</span> MyClass();</code></pre>
+				<a href="#hook-examples" id="hook-examples" style="color: inherit; text-decoration: none;">
+					<h2>Hook Examples</h2>
+				</a>
+				<p>Below are a couple common use case examples.</p>
+				<a href="#adding-arguments" id="adding-arguments" style="color: inherit; text-decoration: none;">
+					<h3>Adding Arguments</h3>
+				</a>
+				<p>One each call of the next callback handler arguments are synchornized at position. New arguments are also appended to the chain so as to be available in the next hook.</p>
+				<p>For example calling <code>next()</code> will provide all args as previously supplied. If you have two arguments after the next handler but you only override the first, <code>next(null, newFirst)</code> the next hook will see <code>args = [newFirst, oldSecond]</code>. If you add a new third argument the next hook in the chain will see all three arguments as show below:</p>
+				<pre><code class="language-ts">api.pre(<span class="hljs-string">'findUser'</span>, <span class="hljs-function">(<span class="hljs-params">next, queryOrId, options</span>) =&gt;</span> {
+  <span class="hljs-keyword">const</span> meta = { timestamp: <span class="hljs-built_in">Date</span>.now() };
+  next(<span class="hljs-literal">null</span>, queryOrId, options, meta); <span class="hljs-comment">// meta now avail in next hook!!!</span>
+});</code></pre>
+				<a href="#running-parallel" id="running-parallel" style="color: inherit; text-decoration: none;">
+					<h3>Running Parallel</h3>
+				</a>
+				<p>Say you want to log something but don&#39;t want to block in your hook by calling <code>next(true)</code> we tell Mustad to proceed to the next hook without waiting. Finally we call next again with our typical options and Mustad will wrap everything up and then call our bound handler from our class or api.</p>
+				<pre><code class="language-ts">api.pre(<span class="hljs-string">'findUser'</span>, <span class="hljs-function">(<span class="hljs-params">next, queryOrId, options</span>) =&gt;</span> {
+  setTimeout(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'Next hook won\'t wait for me, but I will finish before calling api.findUser()'</span>);
+    next(); <span class="hljs-comment">// this is the same as next(null, queryOrId, options)</span>
+  });
+  next(<span class="hljs-literal">true</span>); <span class="hljs-comment">// "true" tells Mustad to iterate to next hook.</span>
+});</code></pre>
+				<a href="#promise-support" id="promise-support" style="color: inherit; text-decoration: none;">
+					<h3>Promise Support</h3>
+				</a>
+				<p>Mustad fully supports promises. To use a promise simply do whatever you like in your hook and return the promise. Mustad will just figure it all out for you.</p>
+				<pre><code class="language-ts">api.pre(<span class="hljs-string">'findUser'</span>, <span class="hljs-function">(<span class="hljs-params">next, queryOrId, options</span>) =&gt;</span> {
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function">(<span class="hljs-params">resolve, reject</span>) =&gt;</span> {
+    <span class="hljs-comment">// do some task resolve or reject.</span>
+    <span class="hljs-keyword">if</span> (<span class="hljs-literal">false</span>)
+      <span class="hljs-keyword">return</span> reject(<span class="hljs-string">'some rejection'</span>);
+    resolve(<span class="hljs-string">'your_data'</span>);
+  })
+});</code></pre>
+				<a href="#callback-or-return" id="callback-or-return" style="color: inherit; text-decoration: none;">
+					<h2>Callback or Return</h2>
+				</a>
+				<p>Hooks allow you to either return values and then handle as needed or you can callback as we&#39;ve shown with our <code>next()</code> callback. Here are the options when returning a value or calling the next callback.</p>
+				<a href="#return-actions" id="return-actions" style="color: inherit; text-decoration: none;">
+					<h3>Return Actions</h3>
+				</a>
+				<table>
+					<tr>
+						<th>Action</th><th>Description</th>
+					</tr>
+					<tr>
+						<tr><td>return true;</td><td>same as calling next()</td></tr>
+						<tr><td>return false;</td><td>same as calling next(new Error(`Hook "findUser" returned false and exited.`))</td></tr>
+						<tr><td>return Promise.resolve();</td><td>waits for promise then runs next hook.</td></tr>
+						<tr><td>return undefined;</td><td>no action taken</td></tr>
+					</tr>
+				</table>
+				<a href="#callback-actions" id="callback-actions" style="color: inherit; text-decoration: none;">
+					<h3>Callback Actions</h3>
+				</a>
+				<table>
+					<tr>
+						<th>Action</th><th>Description</th>
+					</tr>
+					<tr><td>next()</td><td>same as calling next(null, ...args) where "args" are the original spread args.</td></tr>
+					<tr><td>next(true)</td><td>won't wait causes next hook to be called but will finish before calling primary handler.</td></tr>
+					<tr><td>next(false)</td><td>same as calling next(new Error(`Hook "findUser" returned false and exited.`))</td></tr>
+					<tr><td>next(new Error())</td><td>will halt and exit all hooks.</td></tr>
+					<tr><td>next(null, arg1)</td><td>calls next hook any args by index missing will be added to arg1</td></tr>
+				</table>
+				<a href="#options" id="options" style="color: inherit; text-decoration: none;">
+					<h2>Options</h2>
+				</a>
+				<table>
+					<tr><th>Property</th><th>Description</th><th>Default</th></tr>
+					<tr><td>enablePre</td><td>when enabled "pre" hooks are run</td><td>true</td></tr>
+					<tr><td>enablePost</td><td>when enabled "post" hooks are run</td><td>true</td></tr>
+					<tr><td>timeout</td><td>how long to wait for async hooks before continue</td><td>3000</td></tr>
+					<tr><td>timeoutError</td><td>when timeout is elapsed whether to error or not</td><td>true</td></tr>
+					<tr><td>include</td><td>array of methods to allow binding to undefined or [] is all</td><td>[]</td></tr>
+					<tr><td>exclude</td><td>array of methods to allow PREVENT binding to</td><td>[]</td></tr>
+					<tr><td>lazy</td><td>lazy mode binds hook wrapper automatically to any defined hook *</td><td>true</td></tr>
+				</table>
+				<ul>
+					<li>When lazy mode is disabled any defined hook will need to bound. Defining a <code>pre(); post(); preExec(); postExec()</code> merely adds it to the internal collection as a hook. Lazy mode then ensures the defined handler name is wrapped so that it can handle calling these defined hooks. So by setting <strong>lazy</strong> to false you would then need to do the following manually:</li>
+				</ul>
+				<pre><code class="language-ts"><span class="hljs-comment">// Name - the name of the method</span>
+<span class="hljs-comment">// handler - the prototype function itself.</span>
+<span class="hljs-comment">// context - the optional context to bind to the hooks.</span>
+mustad.hook(name, handler, context);</code></pre>
+				<p>If you need to do this manually it will be obvious. Additionally Mustad will check if the handler has already been wrapped.</p>
 				<a href="#docs" id="docs" style="color: inherit; text-decoration: none;">
 					<h2>Docs</h2>
 				</a>

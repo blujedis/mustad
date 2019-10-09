@@ -9,7 +9,6 @@ export interface IHookHandler {
 }
 export declare type NextHandler = (next?: IHookHandler, ...args: any[]) => any;
 export interface IOptions {
-    appendArgs?: boolean;
     enablePre?: boolean;
     enablePost?: boolean;
     timeout?: number;

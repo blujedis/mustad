@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const map_1 = require("./map");
 const utils_1 = require("./utils");
 const DEFAULTS = {
-    appendArgs: false,
     enablePre: true,
     enablePost: true,
     timeout: 3000,
@@ -25,15 +24,15 @@ class Mustad {
     /**
      * Merge args when next is called.
      *
-     * @param base the base or default args.
-     * @param extend additional args to extend or overwrite with.
+     * @param args the base or default args.
+     * @param nargs the next function args including additional args.
      */
-    mergeArgs(base = [], extend = []) {
-        if (this.options.appendArgs)
-            return [...base, ...extend];
-        if (!extend.length)
-            return base;
-        return extend;
+    mergeArgs(args = [], nargs = []) {
+        if (!nargs.length)
+            return args;
+        if (nargs.length < args.length) // append missing args not included in nargs.
+            nargs = [...nargs, ...args.slice(nargs.length)];
+        return nargs;
     }
     /**
      * Handles error, throws or callsback.
@@ -86,6 +85,8 @@ class Mustad {
         const next = (err, ...nargs) => {
             if (utils_1.isError(err))
                 return done(err, this.mergeArgs(args, nargs));
+            if (err === false)
+                return done(new Error(`Hook "${fname.toUpperCase()}" returned false and exited.`), this.mergeArgs(args, nargs));
             // if is true treat as async
             // disable call once don't mark as complete.
             if (err === true) {

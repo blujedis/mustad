@@ -1,6 +1,6 @@
 {
   "name": "mustad",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Pre and post hooks for functions such as node, mongodb etc.",
   "main": "dist/index.js",
   "scripts": {
@@ -8,7 +8,8 @@
     "start": "tsc -w",
     "typedoc": "typedoc ./src --options ./typedoc.json --out ./docs",
     "docs": "npm run typedoc && touch ./docs/.nojekll",
-    "test": "mocha test/**/*.spec.ts* --require ./register.js --bail"
+    "test": "mocha test/**/*.spec.ts* --require ./register.js --bail",
+    "prep": "npm run build && npm run docs && npm run test"
   },
   "files": [
     "fixtures",

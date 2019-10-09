@@ -6,7 +6,6 @@ import {
 } from './utils';
 
 const DEFAULTS: IOptions = {
-  appendArgs: false,
   enablePre: true,
   enablePost: true,
   timeout: 3000,
@@ -34,15 +33,15 @@ export class Mustad<T = any> {
   /**
    * Merge args when next is called.
    * 
-   * @param base the base or default args.
-   * @param extend additional args to extend or overwrite with.
+   * @param args the base or default args.
+   * @param nargs the next function args including additional args.
    */
-  protected mergeArgs(base: any[] = [], extend: any[] = []) {
-    if (this.options.appendArgs)
-      return [...base, ...extend];
-    if (!extend.length)
-      return base;
-    return extend;
+  protected mergeArgs(args: any[] = [], nargs: any[] = []) {
+    if (!nargs.length)
+      return args;
+    if (nargs.length < args.length)   // append missing args not included in nargs.
+      nargs = [...nargs, ...args.slice(nargs.length) ];
+    return nargs;
   }
 
   /**
@@ -105,10 +104,13 @@ export class Mustad<T = any> {
 
     let wrapper;
 
-    const next = (err?: Error | null | true, ...nargs: any[]) => {
+    const next = (err?: Error | null | boolean, ...nargs: any[]) => {
 
       if (isError(err))
         return done(err as Error, this.mergeArgs(args, nargs));
+
+      if (err === false)
+        return done(new Error(`Hook "${fname.toUpperCase()}" returned false and exited.`), this.mergeArgs(args, nargs));
 
       // if is true treat as async
       // disable call once don't mark as complete.

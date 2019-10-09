@@ -10,10 +10,10 @@ export declare class Mustad<T = any> {
     /**
      * Merge args when next is called.
      *
-     * @param base the base or default args.
-     * @param extend additional args to extend or overwrite with.
+     * @param args the base or default args.
+     * @param nargs the next function args including additional args.
      */
-    protected mergeArgs(base?: any[], extend?: any[]): any[];
+    protected mergeArgs(args?: any[], nargs?: any[]): any[];
     /**
      * Handles error, throws or callsback.
      *
