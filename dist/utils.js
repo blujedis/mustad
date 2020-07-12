@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.me = exports.once = exports.isHookable = exports.flatten = exports.isHooked = exports.isArray = exports.toArray = exports.hasOwn = exports.isUndefined = exports.isFunction = exports.isError = exports.isBoolean = exports.isPromise = void 0;
 exports.isPromise = val => Promise.resolve(val) === val;
 exports.isBoolean = val => typeof val === 'boolean';
 exports.isError = val => (val instanceof Error);

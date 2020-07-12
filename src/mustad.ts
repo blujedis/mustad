@@ -40,7 +40,7 @@ export class Mustad<T = any> {
     if (!nargs.length)
       return args;
     if (nargs.length < args.length)   // append missing args not included in nargs.
-      nargs = [...nargs, ...args.slice(nargs.length) ];
+      nargs = [...nargs, ...args.slice(nargs.length)];
     return nargs;
   }
 
@@ -329,7 +329,7 @@ export class Mustad<T = any> {
 
     };
 
-    return compiled as typeof compiled & { __hooked?: Handler };
+    return compiled as typeof compiled & { __hooked?: Handler; };
 
   }
 

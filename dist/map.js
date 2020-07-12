@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.MustadMap = void 0;
 class MustadMap extends Map {
     /**
      * Ensures the hook collection is initialized.
