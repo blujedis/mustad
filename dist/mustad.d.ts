@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { MustadMap } from './map';
 import { IOptions, NextHandler, Handler, IMeta, NodeCallback } from './types';
 export declare class Mustad<T = any> {
@@ -29,7 +28,7 @@ export declare class Mustad<T = any> {
      * @param meta metadata for ensuring hooks have completed or timedout.
      * @param done function called on done.
      */
-    protected applyHooks(args: any[], handlers: NextHandler[], meta: IMeta, done: NodeCallback<any[]>): Promise<void | NodeJS.Immediate>;
+    protected applyHooks(args: any[], handlers: NextHandler[], meta: IMeta, done: NodeCallback<any[]>): Promise<number | void>;
     /**
      * Wraps a hook function.
      *

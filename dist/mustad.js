@@ -76,7 +76,8 @@ class Mustad {
                 }, timeout);
             // Async hooks not finished callback
             // until done or timedout.
-            return setImmediate(() => {
+            // return setImmediate(() => {
+            return setTimeout(() => {
                 this.applyHooks(args, handlers, meta, done);
             });
         }
@@ -223,6 +224,10 @@ class Mustad {
             }
             const { err: hErr, data: hData } = await utils_1.me(this.wrapHandler(handler.bind(this.proto), nextArgs, cb));
             nextArgs = hData;
+            // If nextArgs is array we need to wrap in
+            // array otherwise single array will be spread.
+            if (Array.isArray(nextArgs))
+                nextArgs = [nextArgs];
             if (hErr)
                 return this.handleError(hErr, cb);
             if ((this.options.enablePost || execType === 'post') && posts.length) {

@@ -1,15 +1,21 @@
 // tslint:disable
 import { wrap, Mustad } from './mustad';
 
-// const base = {
+const base = {
 
-//   async one(name, obj?) {
-//     return Promise.resolve(`My name is ${name}`);
-//   }
+  async one(name, obj?) {
+    return Promise.resolve(['one', 'two', 'three']);
+  },
 
-// };
+  async two(name, arr) {
+    return Promise.resolve({ name, arr });
+  }
 
-// const api = wrap(base);
+};
+
+const api = wrap(base);
+
+// TEST ONE //
 
 // api.pre('one', (next, name, obj) => {
 //   next();
@@ -19,7 +25,7 @@ import { wrap, Mustad } from './mustad';
 //   setTimeout(() => {
 //     obj.active = false;
 //     next();
-//   }, 100)
+//   }, 100);
 //   next();
 // });
 
@@ -34,3 +40,22 @@ import { wrap, Mustad } from './mustad';
 //   .catch(err => {
 //     console.log(err);
 //   });
+
+// TEST TWO //
+
+api.pre('two', (next, name, arr) => {
+  console.log(arr);
+  next();
+});
+
+api.post('two', (next, data) => {
+  next();
+});
+
+api.two('bob', ['four', 'five', 'six'])
+  .then(res => {
+    console.log(res);
+  })
+  .catch(err => {
+    console.log(err);
+  });

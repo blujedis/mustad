@@ -1,8 +1,7 @@
 import { MustadMap } from './map';
 import { IOptions, NextHandler, Handler, IMeta, NodeCallback } from './types';
 import {
-  isHooked, me, isFunction, toArray, isHookable, isError, once, isBoolean, isPromise,
-  flatten, isArray, isUndefined
+  isHooked, me, isFunction, toArray, isHookable, isError, once, isBoolean, isPromise
 } from './utils';
 
 const DEFAULTS: IOptions = {
@@ -93,7 +92,8 @@ export class Mustad<T = any> {
 
       // Async hooks not finished callback
       // until done or timedout.
-      return setImmediate(() => {
+      // return setImmediate(() => {
+      return setTimeout(() => {
         this.applyHooks(args, handlers, meta, done);
       });
 
@@ -297,6 +297,11 @@ export class Mustad<T = any> {
       const { err: hErr, data: hData } = await me(this.wrapHandler(handler.bind(this.proto), nextArgs, cb));
 
       nextArgs = hData;
+
+      // If nextArgs is array we need to wrap in
+      // array otherwise single array will be spread.
+      if (Array.isArray(nextArgs))
+        nextArgs = [nextArgs];
 
       if (hErr)
         return this.handleError(hErr, cb);

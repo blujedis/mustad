@@ -1,11 +1,15 @@
 {
   "name": "mustad",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Pre and post hooks for functions such as node, mongodb etc.",
   "main": "dist/index.js",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
   "scripts": {
     "build": "rimraf dist && tsc -b",
-    "start": "tsc -w",
+    "watch": "tsc -w",
+    "start": "npm run watch",
     "typedoc": "typedoc ./src --options ./typedoc.json --out ./docs",
     "docs": "npm run typedoc && touch ./docs/.nojekll",
     "test": "mocha test/**/*.spec.ts* --require ./register.js --bail",
