@@ -1,15 +1,28 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.me = exports.once = exports.isHookable = exports.flatten = exports.isHooked = exports.isArray = exports.toArray = exports.hasOwn = exports.isUndefined = exports.isFunction = exports.isError = exports.isBoolean = exports.isPromise = void 0;
-exports.isPromise = val => Promise.resolve(val) === val;
-exports.isBoolean = val => typeof val === 'boolean';
-exports.isError = val => (val instanceof Error);
-exports.isFunction = val => typeof val === 'function';
-exports.isUndefined = val => typeof val === 'undefined';
-exports.hasOwn = (obj, key) => obj.hasOwnProperty(key);
-exports.toArray = val => exports.isUndefined(val) && [] || (Array.isArray(val) && val) || [val];
-exports.isArray = val => Array.isArray(val);
-exports.isHooked = (handler) => exports.isFunction(handler) && handler.__hooked;
+exports.isHooked = exports.isArray = exports.toArray = exports.hasOwn = exports.isUndefined = exports.isFunction = exports.isError = exports.isBoolean = exports.isPromise = void 0;
+exports.flatten = flatten;
+exports.isHookable = isHookable;
+exports.once = once;
+exports.me = me;
+const isPromise = val => Promise.resolve(val) === val;
+exports.isPromise = isPromise;
+const isBoolean = val => typeof val === 'boolean';
+exports.isBoolean = isBoolean;
+const isError = val => (val instanceof Error);
+exports.isError = isError;
+const isFunction = val => typeof val === 'function';
+exports.isFunction = isFunction;
+const isUndefined = val => typeof val === 'undefined';
+exports.isUndefined = isUndefined;
+const hasOwn = (obj, key) => obj.hasOwnProperty(key);
+exports.hasOwn = hasOwn;
+const toArray = val => (0, exports.isUndefined)(val) && [] || (Array.isArray(val) && val) || [val];
+exports.toArray = toArray;
+const isArray = val => Array.isArray(val);
+exports.isArray = isArray;
+const isHooked = (handler) => (0, exports.isFunction)(handler) && handler.__hooked;
+exports.isHooked = isHooked;
 /**
  * Flattens multi dimensional array.
  *
@@ -18,20 +31,18 @@ exports.isHooked = (handler) => exports.isFunction(handler) && handler.__hooked;
 function flatten(arr) {
     return arr.reduce((a, c) => [...a, ...(Array.isArray(c) ? flatten(c) : [c])], []);
 }
-exports.flatten = flatten;
 function isHookable(key, proto, allowable = []) {
-    if (exports.isFunction(key))
-        return !exports.isHooked(key);
-    if (exports.isArray(proto)) {
+    if ((0, exports.isFunction)(key))
+        return !(0, exports.isHooked)(key);
+    if ((0, exports.isArray)(proto)) {
         allowable = proto;
         proto = undefined;
     }
     allowable = allowable || [];
     if (proto)
-        return allowable.includes(key) && exports.isFunction(proto[key]) && !proto[key].__hooked;
+        return allowable.includes(key) && (0, exports.isFunction)(proto[key]) && !proto[key].__hooked;
     return allowable.includes(key);
 }
-exports.isHookable = isHookable;
 /**
  * Wraps function to ensure it is only called once.
  *
@@ -48,7 +59,6 @@ function once(fn, scope = {}) {
     wrapper.__called = false;
     return wrapper;
 }
-exports.once = once;
 /**
  * Wraps a promise returning resolved error/data as object.
  *
@@ -59,5 +69,4 @@ function me(promise) {
         .then(data => ({ err: null, data }))
         .catch(err => ({ err }));
 }
-exports.me = me;
 //# sourceMappingURL=utils.js.map

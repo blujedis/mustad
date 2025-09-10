@@ -2,16 +2,16 @@ import { assert } from 'chai';
 import { wrap } from '../src';
 
 const base = {
-  getName(name, cb) {
+  getName (name, cb) {
     cb(null, `My name is ${name}`);
   },
-  getNameProm(name) {
+  getNameProm (name) {
     return Promise.resolve(`My name is ${name}`);
   },
-  getAge(age, cb) {
+  getAge (age, cb) {
     cb(null, `I am ${age} years old`);
   },
-  notHooked() {
+  notHooked () {
     //
   }
 };
@@ -90,7 +90,6 @@ describe('Mustad', () => {
   it('Should run pre manually using preExec', (done) => {
 
     api.preExec('getAge', [22], (err, result) => {
-
       done();
     });
 

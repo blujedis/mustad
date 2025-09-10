@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.wrap = exports.Mustad = void 0;
+exports.Mustad = void 0;
+exports.wrap = wrap;
 const map_1 = require("./map");
 const utils_1 = require("./utils");
 const DEFAULTS = {
@@ -13,9 +14,11 @@ const DEFAULTS = {
     lazy: true
 };
 class Mustad {
+    proto;
+    pres = new map_1.MustadMap();
+    posts = new map_1.MustadMap();
+    options;
     constructor(proto, options = {}) {
-        this.pres = new map_1.MustadMap();
-        this.posts = new map_1.MustadMap();
         options = { ...DEFAULTS, ...options };
         if (!proto)
             throw new Error(`Cannot initialize Mustad using proto of undefined.`);
@@ -85,7 +88,7 @@ class Mustad {
         const fname = meta.name;
         let wrapper;
         const next = (err, ...nargs) => {
-            if (utils_1.isError(err))
+            if ((0, utils_1.isError)(err))
                 return done(err, this.mergeArgs(args, nargs));
             if (err === false)
                 return done(new Error(`Hook "${fname.toUpperCase()}" returned false and exited.`), this.mergeArgs(args, nargs));
@@ -101,16 +104,16 @@ class Mustad {
         };
         // Get the result allow user to call next()
         // return true/false, a Promise or an Error.
-        wrapper = utils_1.once(next, meta.context);
+        wrapper = (0, utils_1.once)(next, meta.context);
         const result = fn(wrapper, ...args);
         // Result was returned, callback NOT called.
         // ensure value is not function where user
         // did something like return next();
-        if (utils_1.isBoolean(result) || utils_1.isPromise(result) || utils_1.isError(result)) {
+        if ((0, utils_1.isBoolean)(result) || (0, utils_1.isPromise)(result) || (0, utils_1.isError)(result)) {
             // User returned a promise call
             // and convert to callback.
-            if (utils_1.isPromise(result)) {
-                const { err, data } = await utils_1.me(result);
+            if ((0, utils_1.isPromise)(result)) {
+                const { err, data } = await (0, utils_1.me)(result);
                 next(err, data);
             }
             // Error or bool returned. If true just call
@@ -133,7 +136,7 @@ class Mustad {
      */
     wrapHook(fn, args, handlers, meta) {
         // ensure array.
-        args = utils_1.toArray(args);
+        args = (0, utils_1.toArray)(args);
         meta = { ...{ length: handlers.length, completed: 0, timedout: false }, ...meta };
         return new Promise((res, rej) => {
             fn(args, handlers, meta, (err, nargs) => {
@@ -152,13 +155,13 @@ class Mustad {
      */
     wrapHandler(fn, args, cb) {
         // ensure array.
-        args = utils_1.toArray(args);
+        args = (0, utils_1.toArray)(args);
         if (!cb) {
             const result = fn(...args);
-            if (utils_1.isPromise(result))
+            if ((0, utils_1.isPromise)(result))
                 return result;
             return new Promise((res, rej) => {
-                if (utils_1.isError(result))
+                if ((0, utils_1.isError)(result))
                     return rej(result);
                 return res(result);
             });
@@ -208,7 +211,7 @@ class Mustad {
         const compiled = async (...args) => {
             let pres = this.pres.get(name).slice(0);
             let posts = this.posts.get(name).slice(0);
-            const cb = utils_1.isFunction(args[args.length - 1]) ? args.pop() : null;
+            const cb = (0, utils_1.isFunction)(args[args.length - 1]) ? args.pop() : null;
             let nextArgs = args.slice(0);
             if (execType) {
                 if (execType === 'pre')
@@ -217,12 +220,12 @@ class Mustad {
                     pres = [];
             }
             if ((this.options.enablePre || execType === 'pre') && pres.length) {
-                const { err: preErr, data: preData } = await utils_1.me(this.wrapHook(this.applyHooks.bind(this), nextArgs, pres, { context, mustad, name }));
+                const { err: preErr, data: preData } = await (0, utils_1.me)(this.wrapHook(this.applyHooks.bind(this), nextArgs, pres, { context, mustad, name }));
                 if (preErr)
                     return this.handleError(preErr, cb);
                 nextArgs = preData;
             }
-            const { err: hErr, data: hData } = await utils_1.me(this.wrapHandler(handler.bind(this.proto), nextArgs, cb));
+            const { err: hErr, data: hData } = await (0, utils_1.me)(this.wrapHandler(handler.bind(this.proto), nextArgs, cb));
             nextArgs = hData;
             // If nextArgs is array we need to wrap in
             // array otherwise single array will be spread.
@@ -231,17 +234,17 @@ class Mustad {
             if (hErr)
                 return this.handleError(hErr, cb);
             if ((this.options.enablePost || execType === 'post') && posts.length) {
-                const { err: postErr, data: postData } = await utils_1.me(this.wrapHook(this.applyHooks.bind(this), nextArgs, posts, { context, mustad, name }));
+                const { err: postErr, data: postData } = await (0, utils_1.me)(this.wrapHook(this.applyHooks.bind(this), nextArgs, posts, { context, mustad, name }));
                 if (postErr)
                     return this.handleError(postErr, cb);
                 nextArgs = postData.length === 1 ? postData[0] : postData;
                 if (cb)
-                    cb(null, ...utils_1.toArray(nextArgs));
+                    cb(null, ...(0, utils_1.toArray)(nextArgs));
                 return Promise.resolve(nextArgs);
             }
             else {
                 if (cb)
-                    cb(null, ...utils_1.toArray(nextArgs));
+                    cb(null, ...(0, utils_1.toArray)(nextArgs));
                 return Promise.resolve(nextArgs);
             }
         };
@@ -255,9 +258,9 @@ class Mustad {
      * @param context optional context to bind to.
      */
     hook(name, handler, context) {
-        if (utils_1.isHooked(handler))
+        if ((0, utils_1.isHooked)(handler))
             return null;
-        if (!utils_1.isHookable(name, this.allowableMethods()) || !utils_1.isHookable(handler))
+        if (!(0, utils_1.isHookable)(name, this.allowableMethods()) || !(0, utils_1.isHookable)(handler))
             throw new Error(`Cannot bind hook to unknown, prohibited or previously hooked method ${name}.`);
         const proto = this.proto || this;
         const compiled = this.compile(name, handler, context);
@@ -267,11 +270,19 @@ class Mustad {
         proto[name] = compiled;
         return this;
     }
+    /**
+     * Adds pre hooks to method.
+     *
+     * @param names the names of the methods to bind to.
+     * @param context optional context to apply to handlers.
+     * @param hooks the hooks to be compiled.
+     */
+    // pre<C extends Record<string, unknown>> (names: string[], context: C, hooks: NextHandler | NextHandler[]): this;
     pre(name, context, hooks) {
         const options = this.options;
         const proto = this.proto || this;
-        hooks = utils_1.toArray(hooks);
-        if (utils_1.isFunction(context)) {
+        hooks = (0, utils_1.toArray)(hooks);
+        if ((0, utils_1.isFunction)(context)) {
             hooks.unshift(context);
             context = undefined;
         }
@@ -290,11 +301,19 @@ class Mustad {
             this.hook(name, proto[name]);
         return this;
     }
+    /**
+     * Adds post hooks to method.
+     *
+     * @param names the names of the methods to bind to.
+     * @param context optional context to apply to hooks.
+     * @param hooks the hooks to be compiled.
+     */
+    // post<C extends Record<string, unknown>> (names: string[], context: C, hooks: NextHandler | NextHandler[]): this;
     post(name, context, hooks) {
         const options = this.options;
         const proto = this.proto || this;
-        hooks = utils_1.toArray(hooks);
-        if (utils_1.isFunction(context)) {
+        hooks = (0, utils_1.toArray)(hooks);
+        if ((0, utils_1.isFunction)(context)) {
             hooks.unshift(context);
             context = undefined;
         }
@@ -314,7 +333,7 @@ class Mustad {
         return this;
     }
     preExec(name, args, context, cb) {
-        if (utils_1.isFunction(context)) {
+        if ((0, utils_1.isFunction)(context)) {
             cb = context;
             context = undefined;
         }
@@ -333,7 +352,7 @@ class Mustad {
         return this.compile(name, handler, context)(...args);
     }
     postExec(name, args, context, cb) {
-        if (utils_1.isFunction(context)) {
+        if ((0, utils_1.isFunction)(context)) {
             cb = context;
             context = undefined;
         }
@@ -355,7 +374,7 @@ class Mustad {
      * Returns a list of hooked methods.
      */
     list() {
-        return Object.keys(this.proto).filter(v => utils_1.isHooked(this.proto[v]));
+        return Object.keys(this.proto).filter(v => (0, utils_1.isHooked)(this.proto[v]));
     }
 }
 exports.Mustad = Mustad;
@@ -369,5 +388,4 @@ function wrap(proto, instance) {
     _proto.postExec = instance.postExec.bind(instance);
     return _proto;
 }
-exports.wrap = wrap;
 //# sourceMappingURL=mustad.js.map

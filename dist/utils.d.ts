@@ -1,12 +1,12 @@
 import { Handler } from './types';
 export declare const isPromise: (val: any) => boolean;
-export declare const isBoolean: (val: any) => boolean;
-export declare const isError: (val: any) => boolean;
+export declare const isBoolean: (val: any) => val is boolean;
+export declare const isError: (val: any) => val is Error;
 export declare const isFunction: (val: any) => boolean;
-export declare const isUndefined: (val: any) => boolean;
+export declare const isUndefined: (val: any) => val is undefined;
 export declare const hasOwn: (obj: object, key: string) => boolean;
 export declare const toArray: (val: any) => any[];
-export declare const isArray: (val: any) => boolean;
+export declare const isArray: (val: any) => val is any[];
 export declare const isHooked: (handler: Handler) => any;
 /**
  * Flattens multi dimensional array.
@@ -51,6 +51,6 @@ export declare function once<T>(fn: any, scope?: T): {
  * @param promise a promise to be wrapped
  */
 export declare function me<T>(promise: Promise<T>): Promise<{
-    err?: Error;
+    err: null | Error;
     data?: T;
 }>;

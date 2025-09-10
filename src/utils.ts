@@ -15,7 +15,7 @@ export const isHooked = (handler: Handler) => isFunction(handler) && (handler as
  * 
  * @param arr the array to be flattened. 
  */
-export function flatten<T = any>(arr: T[]): T[] {
+export function flatten<T = any> (arr: T[]): T[] {
   return arr.reduce((a, c) => [...a, ...(Array.isArray(c) ? flatten(c) : [c])], []);
 }
 
@@ -26,7 +26,7 @@ export function flatten<T = any>(arr: T[]): T[] {
  * @param proto the prototype that the key belongs to.
  * @param allowable the allowable hookable keys.
  */
-export function isHookable<T extends object>(key: string, proto: T, allowable: string[]): boolean;
+export function isHookable<T extends object> (key: string, proto: T, allowable: string[]): boolean;
 
 /**
  * Checks if key is contained in hookable keys.
@@ -34,18 +34,18 @@ export function isHookable<T extends object>(key: string, proto: T, allowable: s
  * @param key the key to inspect if is hookable.
  * @param allowable the allowable hookable keys.
  */
-export function isHookable(key: string, allowable: string[]): boolean;
+export function isHookable (key: string, allowable: string[]): boolean;
 
 /**
  * Ensures handler is NOT __hooked.
  * 
  * @param handler a handler to check if is __hooked.
  */
-export function isHookable(handler: Handler): boolean;
-export function isHookable<T extends object>(key: string | Handler, proto?: T | string[], allowable: string[] = []) {
+export function isHookable (handler: Handler): boolean;
+export function isHookable<T extends object> (key: string | Handler, proto?: T | string[], allowable: string[] = []) {
 
   if (isFunction(key))
-    return !isHooked(key as any);
+    return !isHooked(key as Handler);
 
   if (isArray(proto)) {
     allowable = proto as string[];
@@ -67,8 +67,8 @@ export function isHookable<T extends object>(key: string | Handler, proto?: T | 
  * @param fn the function to be wrapped.
  * @param scope the scope to apply to the function.
  */
-export function once<T>(fn: any, scope: T = {} as any) {
-  function wrapper() {
+export function once<T> (fn: any, scope = {} as T) {
+  function wrapper () {
     if (wrapper.__called)
       return;
     wrapper.__called = true;
@@ -83,8 +83,8 @@ export function once<T>(fn: any, scope: T = {} as any) {
  * 
  * @param promise a promise to be wrapped
  */
-export function me<T>(promise: Promise<T>) {
+export function me<T> (promise: Promise<T>) {
   return promise
     .then(data => ({ err: null, data }))
-    .catch(err => ({ err })) as Promise<{ err?: Error, data?: T }>;
+    .catch(err => ({ err })) as Promise<{ err: null | Error, data?: T; }>;
 }
